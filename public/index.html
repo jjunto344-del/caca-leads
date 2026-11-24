@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caça-Leads</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --text: #1a1d23; --muted: #667085; --line: #e4e7ec;
+    --accent: #2563eb; --accent-soft: #e8efff; --green: #12805c; --green-soft: #e3f6ee;
+    --amber: #a15c07; --amber-soft: #fdf1dc; --red: #b42318; --red-soft: #fde8e7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --card: #171a21; --text: #e6e8ec; --muted: #98a2b3; --line: #2a2f3a;
+      --accent: #6b9bff; --accent-soft: #1d2a47; --green: #4ccf9a; --green-soft: #12302a;
+      --amber: #f0b45a; --amber-soft: #3a2c12; --red: #ff8a80; --red-soft: #3a1a18;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { display: flex; align-items: center; gap: 24px; padding: 14px 24px; background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 17px; margin: 0; }
+  nav { display: flex; gap: 4px; }
+  nav button { background: none; border: 0; padding: 8px 14px; border-radius: 8px; cursor: pointer; color: var(--muted); font: inherit; font-weight: 600; }
+  nav button.active { background: var(--accent-soft); color: var(--accent); }
+  main { max-width: 1400px; margin: 0 auto; padding: 20px 24px 60px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } main { padding: 16px; } header { padding: 12px 16px; flex-wrap: wrap; gap: 8px; } }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  .hint { color: var(--muted); font-size: 12.5px; font-weight: 400; }
+  textarea, input[type=text], input[type=password], input[type=number], select {
+    width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  }
+  textarea { min-height: 120px; resize: vertical; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+  .chip { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12.5px; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn { border: 1px solid var(--line); background: var(--card); color: var(--text); padding: 8px 14px; border-radius: 8px; cursor: pointer; font: inherit; font-weight: 600; white-space: nowrap; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:disabled { opacity: .55; cursor: progress; }
+  .btn.small { padding: 4px 9px; font-size: 12.5px; }
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 130px; }
+  .stat b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 12.5px; }
+  .progress { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 12px; display: none; }
+  .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .status-line { color: var(--muted); margin-top: 8px; font-size: 13px; min-height: 18px; }
+  .error { color: var(--red); }
+  .table-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); background: var(--card); position: sticky; top: 0; cursor: pointer; user-select: none; white-space: nowrap; }
+  tr:hover td { background: var(--bg); }
+  td.nome b { display: block; }
+  td .sub { color: var(--muted); font-size: 12.5px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .tag.sem_site { background: var(--green-soft); color: var(--green); }
+  .tag.site_fraco { background: var(--amber-soft); color: var(--amber); }
+  .tag.tem_site { background: var(--red-soft); color: var(--red); }
+  .links { display: flex; gap: 6px; flex-wrap: wrap; }
+  .links a { text-decoration: none; }
+  a { color: var(--accent); }
+  .filters { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .filters label { display: flex; align-items: center; gap: 6px; font-weight: 500; margin: 0; }
+  .filters input[type=number] { width: 80px; }
+  .filters input[type=text] { width: 220px; }
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+  .hidden { display: none !important; }
+  details summary { cursor: pointer; font-weight: 600; }
+  .num { font-variant-numeric: tabular-nums; }
+  .notes { width: 100%; min-width: 160px; min-height: 34px; font-size: 12.5px; }
+  .banner { background: var(--amber-soft); color: var(--amber); padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎯 Caça-Leads</h1>
+  <nav>
+    <button data-tab="buscar" class="active">Buscar leads</button>
+    <button data-tab="pipeline">Meus leads <span id="pipeCount"></span></button>
+    <button data-tab="config">Configurações</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ========== BUSCAR ========== -->
+  <section id="tab-buscar">
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label>Tipos de negócio <span class="hint">— um por linha</span></label>
+          <textarea id="categorias" placeholder="dentista&#10;salão de beleza&#10;oficina mecânica"></textarea>
+          <details style="margin-top:8px"><summary class="hint" style="font-weight:600">Atalhos de categorias (clique para adicionar)</summary>
+          <div id="presets"></div></details>
+        </div>
+        <div>
+          <label>Cidades / bairros <span class="hint">— um por linha. Dica: divida por bairro para achar mais (máx. 60 por busca)</span></label>
+          <textarea id="locais" placeholder="Moema, São Paulo&#10;Pinheiros, São Paulo&#10;Campinas, SP"></textarea>
+          <div class="row" style="margin-top:12px">
+            <label style="margin:0;display:flex;gap:6px;align-items:center;font-weight:500">
+              <input type="checkbox" id="demo"> Modo demonstração (dados fictícios, não usa a API)
+            </label>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn primary" id="btnBuscar">Buscar no Google Maps</button>
+            <button class="btn hidden" id="btnParar">Parar</button>
+            <span class="hint" id="estimativa"></span>
+          </div>
+          <div class="progress" id="progress"><div></div></div>
+          <div class="status-line" id="statusLine"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="resultsArea" class="hidden">
+      <div class="stats" id="stats"></div>
+      <div class="filters">
+        <label><input type="checkbox" id="fSemSite" checked> Sem site</label>
+        <label><input type="checkbox" id="fFraco" checked> Só Instagram/Facebook/Linktree</label>
+        <label><input type="checkbox" id="fComSite"> Com site</label>
+        <label><input type="checkbox" id="fTelefone"> Só com telefone</label>
+        <label><input type="checkbox" id="fCelular"> Só celular (WhatsApp)</label>
+        <label>Mín. avaliações <input type="number" id="fMinAval" value="0" min="0"></label>
+        <input type="text" id="fTexto" placeholder="Filtrar por nome/endereço…">
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn" id="btnSalvarSel">Salvar selecionados em "Meus leads"</button>
+        <button class="btn" id="btnSalvarTodos">Salvar todos os filtrados</button>
+        <button class="btn" id="btnCsv">Exportar CSV (Excel)</button>
+        <span class="hint" id="filteredCount"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:30px"><input type="checkbox" id="selAll"></th>
+            <th data-sort="nome">Empresa</th>
+            <th data-sort="siteStatus">Site</th>
+            <th data-sort="telefone">Telefone</th>
+            <th data-sort="nota">Nota</th>
+            <th data-sort="avaliacoes">Avaliações</th>
+            <th>Ações</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PIPELINE ========== -->
+  <section id="tab-pipeline" class="hidden">
+    <div class="filters">
+      <label>Status
+        <select id="pStatus" style="width:auto">
+          <option value="">Todos</option>
+          <option value="novo">Novo</option>
+          <option value="contatado">Contatado</option>
+          <option value="interessado">Interessado</option>
+          <option value="proposta">Proposta enviada</option>
+          <option value="fechado">Fechado ✅</option>
+          <option value="perdido">Perdido</option>
+        </select>
+      </label>
+      <input type="text" id="pTexto" placeholder="Filtrar…">
+      <button class="btn" id="btnCsvPipe">Exportar CSV</button>
+      <span class="hint" id="pipeStats"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Empresa</th><th>Site</th><th>Telefone</th><th>Status</th><th>Anotações</th><th>Ações</th></tr></thead>
+        <tbody id="pbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ========== CONFIG ========== -->
+  <section id="tab-config" class="hidden">
+    <div class="card">
+      <label>Chave da API do Google (Places API New)</label>
+      <input type="password" id="apiKey" placeholder="AIza…">
+      <p class="hint" id="keyHint">Fica salva só neste navegador. Alternativa: crie um arquivo <code>.env</code> com <code>GOOGLE_MAPS_API_KEY=sua_chave</code>.</p>
+      <details>
+        <summary>Como conseguir a chave (5 minutos)</summary>
+        <ol>
+          <li>Acesse <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> e crie um projeto.</li>
+          <li>Ative o faturamento (o Google oferece uso gratuito mensal; você só paga se passar da cota).</li>
+          <li>Em "APIs e serviços → Biblioteca", ative <b>Places API (New)</b>.</li>
+          <li>Em "Credenciais → Criar credenciais → Chave de API", copie a chave e cole acima.</li>
+          <li>Recomendado: restrinja a chave à Places API e defina um limite de cota diário para não ter surpresa na fatura.</li>
+        </ol>
+      </details>
+    </div>
+    <div class="card">
+      <label>Mensagem padrão do WhatsApp <span class="hint">— use {nome} para o nome da empresa</span></label>
+      <textarea id="msgTpl"></textarea>
+    </div>
+  </section>
+</main>
+
+<script>
+const PRESETS = {
+  'Saúde': ['dentista', 'clínica de fisioterapia', 'psicólogo', 'nutricionista', 'clínica veterinária', 'fonoaudiólogo', 'clínica médica'],
+  'Beleza': ['salão de beleza', 'barbearia', 'clínica de estética', 'manicure', 'estúdio de sobrancelha', 'estúdio de tatuagem'],
+  'Serviços': ['advogado', 'escritório de contabilidade', 'imobiliária', 'autoescola', 'despachante', 'chaveiro', 'eletricista', 'encanador', 'dedetizadora', 'vidraçaria', 'marmoraria', 'serralheria', 'marcenaria', 'gráfica', 'assistência técnica celular'],
+  'Automotivo': ['oficina mecânica', 'funilaria', 'auto elétrica', 'lava rápido', 'borracharia', 'auto escola'],
+  'Educação': ['escola de idiomas', 'reforço escolar', 'escola de música', 'escola de dança'],
+  'Fitness': ['academia', 'estúdio de pilates', 'crossfit', 'personal trainer'],
+  'Eventos': ['buffet', 'fotógrafo', 'salão de festas', 'decoração de festas'],
+  'Alimentação': ['restaurante', 'pizzaria', 'padaria', 'confeitaria', 'hamburgueria', 'marmitaria'],
+  'Comércio': ['pet shop', 'ótica', 'floricultura', 'loja de material de construção', 'loja de roupas', 'loja de móveis'],
+};
+const STATUS_LABEL = { sem_site: 'Sem site', site_fraco: 'Só rede social', tem_site: 'Tem site' };
+const DEFAULT_MSG = 'Olá, tudo bem? Encontrei a {nome} no Google Maps e vi que vocês ainda não têm um site próprio. Eu crio sites profissionais que ajudam a aparecer no Google e receber mais clientes pelo WhatsApp. Posso te mostrar um exemplo rapidinho?';
+
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let results = new Map();   // id -> lead
+let selected = new Set();
+let pipeline = [];
+let sort = { key: 'avaliacoes', dir: -1 };
+let stopFlag = false;
+
+// ---------- Abas ----------
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+function showTab(t) {
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  ['buscar', 'pipeline', 'config'].forEach(x => $('#tab-' + x).classList.toggle('hidden', x !== t));
+  store.set('tab', t);
+  if (t === 'pipeline') loadPipeline();
+}
+
+// ---------- Presets ----------
+$('#presets').innerHTML = Object.entries(PRESETS).map(([g, items]) =>
+  `<div class="chips"><button class="chip" data-group="${esc(g)}" style="font-weight:700">+ ${esc(g)} (todos)</button>` +
+  items.map(i => `<button class="chip" data-item="${esc(i)}">${esc(i)}</button>`).join('') + '</div>').join('');
+$('#presets').onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const add = b.dataset.group ? PRESETS[b.dataset.group] : [b.dataset.item];
+  const cur = lines($('#categorias').value);
+  $('#categorias').value = [...new Set([...cur, ...add])].join('\n');
+  persistForm(); updateEstimate();
+};
+const lines = v => v.split('\n').map(s => s.trim()).filter(Boolean);
+
+// ---------- Form persist ----------
+['categorias', 'locais', 'apiKey', 'msgTpl'].forEach(id => {
+  const el = $('#' + id);
+  el.value = store.get('f_' + id, id === 'msgTpl' ? DEFAULT_MSG : '');
+  el.addEventListener('input', () => { persistForm(); updateEstimate(); });
+});
+$('#demo').checked = store.get('f_demo', false);
+$('#demo').onchange = () => { store.set('f_demo', $('#demo').checked); updateEstimate(); };
+function persistForm() { ['categorias', 'locais', 'apiKey', 'msgTpl'].forEach(id => store.set('f_' + id, $('#' + id).value)); }
+function updateEstimate() {
+  const n = lines($('#categorias').value).length * Math.max(1, lines($('#locais').value).length);
+  $('#estimativa').textContent = n ? `${n} busca(s) · até ${n * 60} empresas` : '';
+}
+updateEstimate();
+
+fetch('/api/config').then(r => r.json()).then(c => {
+  if (c.hasServerKey) $('#keyHint').innerHTML = '✅ Chave encontrada no arquivo <code>.env</code> do servidor. Deixe este campo vazio para usá-la.';
+});
+
+// ---------- Busca ----------
+$('#btnBuscar').onclick = async () => {
+  const cats = lines($('#categorias').value);
+  const locs = lines($('#locais').value);
+  if (!cats.length) return setStatus('Adicione pelo menos um tipo de negócio.', true);
+  const queries = [];
+  for (const c of cats) for (const l of (locs.length ? locs : [''])) queries.push(l ? `${c} em ${l}` : c);
+
+  stopFlag = false;
+  $('#btnBuscar').disabled = true; $('#btnParar').classList.remove('hidden');
+  $('#progress').style.display = 'block';
+  results = new Map(); selected.clear();
+  $('#resultsArea').classList.remove('hidden');
+  const errors = [];
+
+  for (let i = 0; i < queries.length && !stopFlag; i++) {
+    setStatus(`Buscando (${i + 1}/${queries.length}): ${queries[i]}…`);
+    $('#progress > div').style.width = (i / queries.length * 100) + '%';
+    try {
+      const r = await fetch('/api/search', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: queries[i], apiKey: $('#apiKey').value.trim(), demo: $('#demo').checked }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error);
+      for (const p of j.results) if (!results.has(p.id) && p.funcionando !== 'CLOSED_PERMANENTLY') results.set(p.id, p);
+      render();
+    } catch (e) {
+      errors.push(`${queries[i]}: ${e.message}`);
+      if (/chave|API key|PERMISSION|billing|faturamento/i.test(e.message)) { stopFlag = true; }
+    }
+  }
+  $('#progress > div').style.width = '100%';
+  setTimeout(() => $('#progress').style.display = 'none', 600);
+  $('#btnBuscar').disabled = false; $('#btnParar').classList.add('hidden');
+  const opp = [...results.values()].filter(l => l.siteStatus !== 'tem_site').length;
+  setStatus(errors.length ? 'Erros: ' + errors.join(' | ') : `Pronto! ${results.size} empresas encontradas, ${opp} sem site próprio.`, errors.length > 0);
+  render();
+};
+$('#btnParar').onclick = () => { stopFlag = true; setStatus('Parando…'); };
+function setStatus(msg, err) { const s = $('#statusLine'); s.textContent = msg; s.classList.toggle('error', !!err); }
+
+// ---------- Filtros / render ----------
+['fSemSite', 'fFraco', 'fComSite', 'fTelefone', 'fCelular', 'fMinAval', 'fTexto'].forEach(id => $('#' + id).addEventListener('input', render));
+document.querySelectorAll('th[data-sort]').forEach(th => th.onclick = () => {
+  const k = th.dataset.sort; sort = { key: k, dir: sort.key === k ? -sort.dir : (k === 'nome' ? 1 : -1) }; render();
+});
+
+function filtered() {
+  const allow = { sem_site: $('#fSemSite').checked, site_fraco: $('#fFraco').checked, tem_site: $('#fComSite').checked };
+  const min = Number($('#fMinAval').value) || 0;
+  const txt = $('#fTexto').value.toLowerCase().trim();
+  const list = [...results.values()].filter(l =>
+    allow[l.siteStatus] && l.avaliacoes >= min &&
+    (!$('#fTelefone').checked || l.telefone) && (!$('#fCelular').checked || l.celular) &&
+    (!txt || (l.nome + ' ' + l.endereco + ' ' + l.categoria).toLowerCase().includes(txt)));
+  const { key, dir } = sort;
+  return list.sort((a, b) => {
+    const x = a[key] ?? '', y = b[key] ?? '';
+    return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'pt')) * dir;
+  });
+}
+
+function waLink(l) {
+  if (!l.telefoneDigits) return '';
+  const msg = ($('#msgTpl').value || DEFAULT_MSG).replaceAll('{nome}', l.nome.replace(' [DEMO]', ''));
+  return `https://wa.me/${l.telefoneDigits}?text=${encodeURIComponent(msg)}`;
+}
+function siteCell(l) {
+  return `<span class="tag ${l.siteStatus}">${STATUS_LABEL[l.siteStatus]}</span>` +
+    (l.site ? `<div class="sub"><a href="${esc(l.site)}" target="_blank" rel="noopener">${esc(l.siteHost)}</a></div>` : '');
+}
+function actions(l) {
+  const wa = waLink(l);
+  return `<div class="links">
+    <a class="btn small" href="${esc(l.mapsUrl)}" target="_blank" rel="noopener">📍 Maps</a>
+    ${wa ? `<a class="btn small" href="${esc(wa)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
+    ${l.telefoneDigits ? `<a class="btn small" href="tel:+${esc(l.telefoneDigits)}">📞</a>` : ''}
+    <a class="btn small" href="https://www.google.com/search?q=${encodeURIComponent(l.nome + ' ' + l.endereco)}" target="_blank" rel="noopener" title="Conferir no Google se já tem site">🔎</a>
+  </div>`;
+}
+
+function render() {
+  const all = [...results.values()];
+  const c = s => all.filter(l => l.siteStatus === s).length;
+  $('#stats').innerHTML = [
+    ['Encontradas', all.length], ['Sem site', c('sem_site')], ['Só rede social', c('site_fraco')],
+    ['Com site', c('tem_site')], ['Celular/WhatsApp', all.filter(l => l.celular && l.siteStatus !== 'tem_site').length],
+  ].map(([t, n]) => `<div class="stat"><b>${n}</b><span>${t}</span></div>`).join('');
+
+  const list = filtered();
+  $('#filteredCount').textContent = `${list.length} exibidos · ${selected.size} selecionados`;
+  $('#tbody').innerHTML = list.length ? list.map(l => `<tr>
+    <td><input type="checkbox" data-id="${esc(l.id)}" ${selected.has(l.id) ? 'checked' : ''}></td>
+    <td class="nome"><b>${esc(l.nome)}</b><span class="sub">${esc(l.categoria)} · ${esc(l.endereco)}</span></td>
+    <td>${siteCell(l)}</td>
+    <td class="num">${esc(l.telefone) || '<span class="sub">—</span>'}${l.celular ? ' <span class="sub">(cel)</span>' : ''}</td>
+    <td class="num">${l.nota ?? '—'}</td>
+    <td class="num">${l.avaliacoes}</td>
+    <td>${actions(l)}</td></tr>`).join('') : `<tr><td colspan="7" class="empty">Nenhum resultado com esses filtros.</td></tr>`;
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.textContent = th.textContent.replace(/ [▲▼]$/, '') + (th.dataset.sort === sort.key ? (sort.dir > 0 ? ' ▲' : ' ▼') : '');
+  });
+}
+$('#tbody').onchange = e => {
+  const id = e.target.dataset.id; if (!id) return;
+  e.target.checked ? selected.add(id) : selected.delete(id);
+  $('#filteredCount').textContent = `${filtered().length} exibidos · ${selected.size} selecionados`;
+};
+$('#selAll').onchange = e => { filtered().forEach(l => e.target.checked ? selected.add(l.id) : selected.delete(l.id)); render(); };
+
+// ---------- Salvar / exportar ----------
+async function saveLeads(list) {
+  if (!list.length) return alert('Nada para salvar.');
+  const r = await fetch('/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: list }) });
+  const j = await r.json();
+  setStatus(`${j.added} lead(s) novo(s) salvos em "Meus leads" (total: ${j.total}).`);
+  refreshCount();
+}
+$('#btnSalvarSel').onclick = () => saveLeads([...selected].map(id => results.get(id)).filter(Boolean));
+$('#btnSalvarTodos').onclick = () => saveLeads(filtered());
+$('#btnCsv').onclick = () => downloadCsv(filtered(), 'leads');
+
+function downloadCsv(list, name) {
+  const cols = [['Empresa', 'nome'], ['Categoria', 'categoria'], ['Endereço', 'endereco'], ['Telefone', 'telefone'],
+    ['Celular', l => l.celular ? 'sim' : 'não'], ['Situação do site', l => STATUS_LABEL[l.siteStatus]], ['Site atual', 'site'],
+    ['Nota', 'nota'], ['Avaliações', 'avaliacoes'], ['Google Maps', 'mapsUrl'], ['WhatsApp', l => waLink(l)],
+    ['Status', 'status'], ['Anotações', 'notas'], ['Busca', 'busca']];
+  const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [cols.map(c => cell(c[0])).join(';'),
+    ...list.map(l => cols.map(([, k]) => cell(typeof k === 'function' ? k(l) : l[k])).join(';'))];
+  const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${name}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+}
+
+// ---------- Pipeline ----------
+async function loadPipeline() {
+  const j = await (await fetch('/api/leads')).json();
+  pipeline = j.leads; renderPipeline(); refreshCount(pipeline.length);
+}
+async function refreshCount(n) {
+  if (n === undefined) n = (await (await fetch('/api/leads')).json()).leads.length;
+  $('#pipeCount').textContent = n ? `(${n})` : '';
+}
+['pStatus', 'pTexto'].forEach(id => $('#' + id).addEventListener('input', renderPipeline));
+function pipeFiltered() {
+  const st = $('#pStatus').value, txt = $('#pTexto').value.toLowerCase().trim();
+  return pipeline.filter(l => (!st || l.status === st) && (!txt || (l.nome + ' ' + l.endereco + ' ' + l.notas).toLowerCase().includes(txt)));
+}
+function renderPipeline() {
+  const list = pipeFiltered();
+  const count = s => pipeline.filter(l => l.status === s).length;
+  $('#pipeStats').textContent = `${pipeline.length} leads · ${count('contatado')} contatados · ${count('fechado')} fechados`;
+  const opts = [...$('#pStatus').options].slice(1);
+  $('#pbody').innerHTML = list.length ? list.map(l => `<tr>
+    <td class="nome"><b>${esc(l.nome)}</b><span class="sub">${esc(l.categoria)} · ${esc(l.endereco)}</span></td>
+    <td>${siteCell(l)}</td>
+    <td class="num">${esc(l.telefone) || '—'}</td>
+    <td><select data-id="${esc(l.id)}" data-field="status">${opts.map(o => `<option value="${o.value}" ${o.value === l.status ? 'selected' : ''}>${o.text}</option>`).join('')}</select></td>
+    <td><textarea class="notes" data-id="${esc(l.id)}" data-field="notas" placeholder="Anotações…">${esc(l.notas)}</textarea></td>
+    <td>${actions(l)} <button class="btn small" data-del="${esc(l.id)}" style="margin-top:6px">Remover</button></td></tr>`).join('')
+    : `<tr><td colspan="6" class="empty">Nenhum lead salvo ainda. Faça uma busca e clique em "Salvar".</td></tr>`;
+}
+const patchTimers = {};
+$('#pbody').addEventListener('input', e => {
+  const { id, field } = e.target.dataset; if (!id) return;
+  const lead = pipeline.find(l => l.id === id); lead[field] = e.target.value;
+  clearTimeout(patchTimers[id + field]);
+  patchTimers[id + field] = setTimeout(() => fetch('/api/leads/' + encodeURIComponent(id), {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: e.target.value }),
+  }), field === 'notas' ? 500 : 0);
+  if (field === 'status') renderPipeline();
+});
+$('#pbody').addEventListener('click', async e => {
+  const id = e.target.dataset.del; if (!id || !confirm('Remover este lead?')) return;
+  await fetch('/api/leads/' + encodeURIComponent(id), { method: 'DELETE' });
+  loadPipeline();
+});
+$('#btnCsvPipe').onclick = () => downloadCsv(pipeFiltered(), 'meus-leads');
+
+refreshCount();
+showTab(store.get('tab', 'buscar'));
+</script>
+</body>
+</html>
